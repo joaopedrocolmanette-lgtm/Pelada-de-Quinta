@@ -495,11 +495,11 @@
 
   // Elenco inicial (tiers 1-10, 10 = melhor). Idade (N/V) fica em aberto — ajuste em Atletas.
   const DEFAULT_ATHLETES = [
-    {name:"Lucao", tier:10}, {name:"Léo", tier:10},
-    {name:"André", tier:9}, {name:"João", tier:9},
-    {name:"Rato", tier:8},
-    {name:"Tadeu", tier:7}, {name:"Rodrigo", tier:7}, {name:"Sydnei", tier:7},
-    {name:"Guima", tier:6}, {name:"Taiguara", tier:6}, {name:"Ruy", tier:6}, {name:"Luiz Otávio", tier:6}, {name:"Rogério", tier:6}, {name:"Robinson", tier:6}, {name:"Paul", tier:6}, {name:"Rafa", tier:6},
+    {name:"Lucao", tier:10, age:"N"}, {name:"Léo", tier:10, age:"N"},
+    {name:"André", tier:9, age:"N"}, {name:"João", tier:9, age:"N"},
+    {name:"Rato", tier:8, age:"N"},
+    {name:"Tadeu", tier:7, age:"N"}, {name:"Rodrigo", tier:7, age:"N"}, {name:"Sydnei", tier:7},
+    {name:"Guima", tier:6, age:"N"}, {name:"Taiguara", tier:6}, {name:"Ruy", tier:6}, {name:"Luiz Otávio", tier:6}, {name:"Rogério", tier:6}, {name:"Robinson", tier:6}, {name:"Paul", tier:6}, {name:"Rafa", tier:6},
     {name:"Henrique", tier:5}, {name:"Thiago", tier:5}, {name:"Rodney", tier:5},
     {name:"Fernando", tier:4}, {name:"Tiago", tier:4}, {name:"Valmir", tier:4},
     {name:"Antônio", tier:3},
@@ -537,7 +537,12 @@
       }
     });
     // garante que todo atleta tenha campo 'age' (migração leve)
-    stored.forEach(a=>{ if(a.age !== "N" && a.age !== "V"){ a.age = "V"; changed = true; } });
+    const defaultYoungNames = new Set(["lucao","léo","andre","joão","rato","tadeu","rodrigo","guima"]);
+    stored.forEach(a=>{
+      const key = (a.name||"").trim().toLowerCase();
+      if(defaultYoungNames.has(key) && a.age !== "N"){ a.age = "N"; changed = true; }
+      else if(a.age !== "N" && a.age !== "V"){ a.age = "V"; changed = true; }
+    });
     if(changed){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(stored)); }catch(e){} }
     return stored;
   }
@@ -639,7 +644,7 @@
     return team.players.length ? team.players.reduce((s,p)=>s+tierValue(p.tier),0)/team.players.length : 0;
   }
 
-  function drawTeams(){
+  function drawTeamsOnce(){
     const present = athletes.filter(a=>a.present);
     const n = present.length;
     if(n === 0) return [];
@@ -649,19 +654,17 @@
     const capacities = [];
     for(let i=0;i<fullTeams;i++) capacities.push(TEAM_SIZE);
     if(remainder > 0) capacities.push(remainder);
-    if(capacities.length === 0) capacities.push(n); // fewer than TEAM_SIZE players total
+    if(capacities.length === 0) capacities.push(n);
 
     const teams = capacities.map(cap => ({ cap, players: [] }));
 
-    // embaralha primeiro pra empates dentro do mesmo tier variarem entre sorteios,
-    // depois ordena do craque pro iniciante pra distribuir os melhores primeiro
+    // Mantém a aleatoriedade entre jogadores do mesmo tier, mas distribui
+    // os melhores primeiro para facilitar o equilíbrio dos times.
     const pool = shuffle(present).sort((a,b) => tierValue(b.tier) - tierValue(a.tier));
 
     pool.forEach(player=>{
       const open = teams.filter(t => t.players.length < t.cap);
 
-      // pontuação de cada time aberto: nível médio + penalidade se já tem mais gente
-      // da mesma faixa etária (N/V) que o jogador que estamos encaixando agora
       open.forEach(t=>{
         const avg = teamAvg(t);
         const nCount = t.players.filter(p=>p.age==="N").length;
@@ -674,16 +677,45 @@
 
       open.sort((a,b)=> a._score - b._score || a.players.length - b.players.length);
 
-      // pra times não saírem com médias idênticas toda semana, quando há mais de
-      // um time "quase empatado" no topo da fila, sorteia entre eles em vez de
-      // pegar sempre o primeiro — mantém equilíbrio mas com variação real
+      // Pequena aleatoriedade entre opções realmente próximas, evitando
+      // que a mesma combinação de times apareça sempre.
       const best = open[0]._score;
-      const candidates = open.filter(t => t._score <= best + 1.2);
+      const candidates = open.filter(t => t._score <= best + 0.45);
       const pick = candidates[Math.floor(Math.random() * candidates.length)];
       pick.players.push(player);
     });
 
     return teams;
+  }
+
+  function teamSpread(teams){
+    const avgs = teams.filter(t=>t.players.length).map(teamAvg);
+    return Math.max(...avgs) - Math.min(...avgs);
+  }
+
+  function drawTeams(){
+    const present = athletes.filter(a=>a.present);
+    if(present.length === 0) return [];
+
+    // Em vez de aceitar o primeiro sorteio, testa várias distribuições
+    // aleatórias e escolhe uma das melhores. Assim a diferença de nível
+    // fica muito menor sem transformar o sorteio em algo determinístico.
+    const ATTEMPTS = 120;
+    let bestTeams = null;
+    let bestScore = Infinity;
+
+    for(let i=0;i<ATTEMPTS;i++){
+      const candidate = drawTeamsOnce();
+      const spread = teamSpread(candidate);
+      // Jitter pequeno: entre soluções muito próximas, varia o resultado.
+      const score = spread + Math.random() * 0.08;
+      if(score < bestScore){
+        bestScore = score;
+        bestTeams = candidate;
+      }
+    }
+
+    return bestTeams || drawTeamsOnce();
   }
 
   function renderTeams(teams){
@@ -808,7 +840,10 @@
   function addAthlete(){
     const name = newNameInput.value.trim();
     if(!name) { newNameInput.focus(); return; }
-    athletes.push({ id: uid(), name, tier: Number(newTierSelect.value), age: newAgeSelect.value, present: true });
+    const newAthlete = { id: uid(), name, tier: Number(newTierSelect.value), age: newAgeSelect.value, present: true };
+    const insertAt = athletes.findIndex(a => a.tier < newAthlete.tier);
+    if(insertAt === -1) athletes.push(newAthlete);
+    else athletes.splice(insertAt, 0, newAthlete);
     saveAthletes();
     newNameInput.value = "";
     newNameInput.focus();
