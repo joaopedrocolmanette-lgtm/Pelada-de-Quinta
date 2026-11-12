@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pelada">
+<meta name="theme-color" content="#0B3D2E">
+<title>Pelada de Quinta — Sorteio de Times</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230B3D2E'/%3E%3Ccircle cx='50' cy='50' r='28' fill='none' stroke='%23F6F1E4' stroke-width='4'/%3E%3Cpath d='M50 30 L60 38 L56 50 L44 50 L40 38 Z' fill='%23F6F1E4'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --pitch-dark:#0B3D2E;
+    --pitch:#123F2C;
+    --pitch-stripe:#0F3826;
+    --chalk:#F6F1E4;
+    --chalk-dim:#DCD5C3;
+    --charcoal:#1C1B18;
+    --gold:#E8B93B;
+    --gold-deep:#C89A2E;
+    --coral:#C1443B;
+    --line:rgba(246,241,228,0.14);
+    --card:#153F2E;
+    --card-2:#12362A;
+    --radius:18px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:
+      repeating-linear-gradient(180deg, var(--pitch) 0px, var(--pitch) 46px, var(--pitch-stripe) 46px, var(--pitch-stripe) 92px),
+      var(--pitch-dark);
+    color:var(--chalk);
+    min-height:100vh;
+    padding-bottom:env(safe-area-inset-bottom);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:560px; margin:0 auto; padding:0 16px 48px;}
+
+  /* HEADER */
+  header{
+    padding: calc(env(safe-area-inset-top) + 18px) 16px 14px;
+    text-align:center;
+    position:relative;
+  }
+  header::after{
+    content:"";
+    display:block;
+    width:64px; height:3px;
+    background:var(--gold);
+    margin:14px auto 0;
+    border-radius:3px;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin:0 0 6px;
+  }
+  h1{
+    font-size:28px;
+    margin:0;
+    font-weight:800;
+    letter-spacing:-0.01em;
+    text-transform:uppercase;
+    font-style:italic;
+  }
+
+  /* TABS */
+  .tabs{
+    display:flex;
+    gap:6px;
+    background:rgba(0,0,0,0.22);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:4px;
+    margin:18px 0 20px;
+  }
+  .tab-btn{
+    flex:1;
+    border:none;
+    background:transparent;
+    color:var(--chalk-dim);
+    font-family:var(--sans);
+    font-weight:700;
+    font-size:14px;
+    padding:10px 0;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .18s ease, color .18s ease;
+  }
+  .tab-btn.active{
+    background:var(--gold);
+    color:var(--charcoal);
+  }
+
+  .view{display:none;}
+  .view.active{display:block; animation:fadeIn .25s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  /* SECTION LABELS */
+  .section-label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--chalk-dim);
+    margin:22px 0 10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-label::after{content:""; flex:1; height:1px; background:var(--line);}
+
+  /* BUSCA E AÇÕES DE PRESENÇA */
+  .roster-tools{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px;}
+  .search-input{width:100%;min-width:0;background:var(--card);border:1px solid var(--line);color:var(--chalk);border-radius:12px;padding:12px 14px;font-size:14px;font-family:var(--sans);outline:none;}
+  .search-input:focus{border-color:var(--gold);}
+  .search-input::placeholder{color:var(--chalk-dim);}
+  .presence-actions{display:flex;gap:7px;width:100%;}
+  .btn-small{flex:1;min-width:0;background:rgba(0,0,0,.18);color:var(--chalk);border:1px solid var(--line);border-radius:10px;padding:9px 7px;font-family:var(--sans);font-size:11px;font-weight:800;text-transform:uppercase;cursor:pointer;}
+  .manage-search{margin:8px 0 12px;}
+  /* PRESENCE LIST */
+  .roster{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .roster-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:11px 12px;
+  }
+  .checkbox{
+    width:24px; height:24px;
+    min-width:24px;
+    border-radius:7px;
+    border:2px solid var(--chalk-dim);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .checkbox.checked{
+    background:var(--gold);
+    border-color:var(--gold);
+  }
+  .checkbox svg{width:14px; height:14px; opacity:0; transition:opacity .1s;}
+  .checkbox.checked svg{opacity:1;}
+  .roster-photo{width:40px;height:40px;min-width:40px;border-radius:50%;object-fit:cover;background:rgba(246,241,228,0.08);border:1px solid var(--line);}
+  .roster-photo-placeholder{width:40px;height:40px;min-width:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(246,241,228,0.08);border:1px solid var(--line);color:var(--chalk-dim);font-size:18px;}
+  .roster-name{flex:1; font-weight:600; font-size:15px;}
+  .roster-item.absent .roster-name{color:var(--chalk-dim); text-decoration:line-through; text-decoration-color:rgba(246,241,228,0.35);}
+  .tier-pin{
+    font-family:var(--mono);
+    font-size:10.5px;
+    font-weight:700;
+    color:var(--charcoal);
+    background:var(--gold);
+    width:26px; height:26px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .age-badge{
+    font-family:var(--mono);
+    font-size:10px;
+    font-weight:800;
+    width:20px; height:20px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    border:1.5px solid var(--line);
+  }
+  .age-badge.age-N{color:#7FD3C0; border-color:rgba(127,211,192,0.5);}
+  .age-badge.age-V{color:#D6A6E0; border-color:rgba(214,166,224,0.5);}
+
+  .empty-state{
+    text-align:center;
+    padding:40px 20px;
+    color:var(--chalk-dim);
+    font-size:14px;
+    border:1px dashed var(--line);
+    border-radius:14px;
+  }
+  .empty-state a{color:var(--gold); font-weight:700; text-decoration:none;}
+
+  /* CTA */
+  .cta-row{display:flex; gap:10px; margin-top:20px;}
+  .btn{
+    font-family:var(--sans);
+    font-weight:800;
+    font-size:15px;
+    border:none;
+    border-radius:14px;
+    padding:15px 18px;
+    cursor:pointer;
+    text-transform:uppercase;
+    letter-spacing:.02em;
+    transition:transform .08s ease, filter .15s ease;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{
+    flex:1;
+    background:var(--gold);
+    color:var(--charcoal);
+    box-shadow:0 6px 0 var(--gold-deep);
+  }
+  .btn-primary:active{box-shadow:0 3px 0 var(--gold-deep); transform:translateY(3px) scale(1);}
+  .btn-secondary{
+    background:transparent;
+    color:var(--chalk);
+    border:1.5px solid var(--line);
+  }
+  .btn-secondary:disabled{opacity:.35; pointer-events:none;}
+  .count-pill{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--chalk-dim);
+    text-align:center;
+    margin-top:10px;
+  }
+  .count-pill b{color:var(--gold);}
+
+  /* TEAM CARDS (súmula ticket) */
+  .teams{display:flex; flex-direction:column; gap:22px; margin-top:26px;}
+  .team-card{
+    border-radius:var(--radius);
+    overflow:hidden;
+    background:var(--chalk);
+    color:var(--charcoal);
+    position:relative;
+    box-shadow:0 10px 24px rgba(0,0,0,0.28);
+  }
+  .team-head{
+    background:var(--pitch-dark);
+    color:var(--chalk);
+    padding:14px 18px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    position:relative;
+  }
+  .team-head .num{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--gold);
+    display:block;
+    margin-bottom:2px;
+  }
+  .team-head .name{
+    font-size:20px;
+    font-weight:800;
+    font-style:italic;
+    text-transform:uppercase;
+  }
+  .uniform-tag{
+    display:inline-flex;
+    align-items:center;
+    margin-left:8px;
+    padding:4px 8px;
+    border-radius:7px;
+    background:var(--chalk);
+    font-family:var(--mono);
+    font-size:10px;
+    line-height:1.2;
+    font-weight:900;
+    font-style:normal;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    vertical-align:middle;
+    white-space:nowrap;
+  }
+  .team-head .avg{
+    font-family:var(--mono);
+    text-align:right;
+    line-height:1.1;
+  }
+  .team-head .avg .val{font-size:22px; font-weight:800; color:var(--gold);}
+  .team-head .avg .lbl{font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--chalk-dim); display:block;}
+  .perforation{
+    height:10px;
+    background-image: radial-gradient(circle at 10px 0, var(--pitch-stripe) 5px, transparent 5.5px);
+    background-size: 20px 10px;
+    background-position: 0 -5px;
+    background-color:var(--pitch-dark);
+  }
+  .team-players{padding:6px 18px 16px;}
+  .player-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 0;
+    border-bottom:1px solid rgba(28,27,24,0.08);
+  }
+  .player-row:last-child{border-bottom:none;}
+  .player-row .idx{font-family:var(--mono); font-size:12px; color:#9a9488; width:16px;}
+  .player-row .nm{flex:1; font-weight:600; font-size:14.5px;}
+  .player-row .tier-pin{width:22px; height:22px; font-size:10px;}
+
+  /* MANAGE VIEW */
+  .add-form{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .add-form input[type="text"]{
+    flex:1;
+    background:var(--card);
+    border:1px solid var(--line);
+    color:var(--chalk);
+    border-radius:12px;
+    padding:12px 14px;
+    font-size:15px;
+    font-family:var(--sans);
+  }
+  .add-form input::placeholder{color:var(--chalk-dim);}
+  select.tier-select{
+    background:var(--card);
+    border:1px solid var(--line);
+    color:var(--chalk);
+    border-radius:12px;
+    padding:12px 8px;
+    font-family:var(--mono);
+    font-size:14px;
+  }
+  .btn-add{
+    background:var(--gold);
+    color:var(--charcoal);
+    border:none;
+    border-radius:12px;
+    width:48px;
+    font-size:22px;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .manage-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:9px 10px;
+    margin-bottom:8px;
+  }
+  .manage-item input[type="text"]{
+    flex:1;
+    background:transparent;
+    border:none;
+    color:var(--chalk);
+    font-weight:600;
+    font-size:15px;
+    font-family:var(--sans);
+    padding:6px 4px;
+  }
+  .manage-item input[type="text"]:focus{outline:none; border-bottom:1px solid var(--gold);}
+  .manage-photo-wrap{display:flex;align-items:center;gap:8px;order:0;}
+  .manage-photo{width:42px;height:42px;border-radius:50%;object-fit:cover;background:rgba(246,241,228,0.08);border:1px solid var(--line);}
+  .photo-input{max-width:180px;color:var(--chalk-dim);font-size:11px;}
+  .photo-input::file-selector-button{background:var(--gold);color:var(--charcoal);border:none;border-radius:7px;padding:6px 8px;font-weight:700;cursor:pointer;margin-right:6px;}
+  .tier-seg{
+    display:flex;
+    flex-wrap:wrap;
+    gap:3px;
+    background:rgba(0,0,0,0.25);
+    border-radius:8px;
+    padding:3px;
+    width:135px;
+  }
+  .tier-seg button{
+    width:24px; height:24px;
+    border:none;
+    border-radius:5px;
+    background:transparent;
+    color:var(--chalk-dim);
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .tier-seg button.active{background:var(--gold); color:var(--charcoal);}
+  .age-seg{
+    display:flex;
+    gap:3px;
+    background:rgba(0,0,0,0.25);
+    border-radius:8px;
+    padding:3px;
+  }
+  .age-seg button{
+    width:26px; height:24px;
+    border:none;
+    border-radius:5px;
+    background:transparent;
+    color:var(--chalk-dim);
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .age-seg button.active.age-N{background:#7FD3C0; color:var(--charcoal);}
+  .age-seg button.active.age-V{background:#D6A6E0; color:var(--charcoal);}
+  .manage-item{flex-wrap:wrap;}
+  .manage-item input[type="text"]{flex-basis:100%; order:1;}
+  .manage-item .tier-seg{order:2;}
+  .manage-item .age-seg{order:3;}
+  .manage-item .del-btn{order:4; margin-left:auto;}
+  .del-btn{
+    background:transparent;
+    border:none;
+    color:var(--coral);
+    font-size:18px;
+    cursor:pointer;
+    padding:4px 6px;
+    line-height:1;
+  }
+  .tier-legend{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--chalk-dim);
+    line-height:1.7;
+    background:rgba(0,0,0,0.18);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-top:14px;
+  }
+
+  /* DIAGNÓSTICO DO SORTEIO */
+  .draw-meta{
+    margin-top:18px;
+    background:rgba(0,0,0,0.2);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:12px 14px;
+    font-family:var(--mono);
+    font-size:11.5px;
+    line-height:1.7;
+    color:var(--chalk-dim);
+  }
+  .draw-meta b{color:var(--gold);}
+  .draw-meta .warn{
+    display:block;
+    margin-top:8px;
+    padding-left:10px;
+    border-left:2px solid var(--coral);
+    color:#EBB9B3;
+  }
+  .btn-pdf{
+    width:100%;
+    margin-top:14px;
+    background:transparent;
+    color:var(--chalk);
+    border:1.5px solid var(--gold);
+  }
+
+  /* IMPRESSÃO / PDF — visual alinhado ao app */
+  #print-area{display:none;}
+  @media print{
+    @page{
+      size:A4;
+      margin:11mm 12mm;
+    }
+
+    html,body{
+      background:#F6F1E4 !important;
+      color:#1C1B18 !important;
+      height:auto;
+      min-height:0;
+    }
+
+    body{
+      font-family:var(--sans);
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+
+    .wrap, header, .tabs, footer{ display:none !important; }
+
+    #print-area{
+      display:block !important;
+      color:#1C1B18;
+      width:100%;
+      max-width:none;
+    }
+
+    /* Cabeçalho */
+    .p-head{
+      position:relative;
+      background:#0B3D2E;
+      color:#F6F1E4;
+      border-radius:12px;
+      padding:14px 16px 13px;
+      margin-bottom:14px;
+      overflow:hidden;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+
+    .p-head::after{
+      content:"";
+      position:absolute;
+      left:16px;
+      bottom:0;
+      width:52px;
+      height:3px;
+      background:#E8B93B;
+      border-radius:3px 3px 0 0;
+    }
+
+    .p-head h2{
+      margin:0;
+      font-size:20px;
+      line-height:1.05;
+      text-transform:uppercase;
+      font-style:italic;
+      letter-spacing:-0.01em;
+    }
+
+    .p-sub{
+      font-size:9.5px;
+      color:#DCD5C3;
+      margin:6px 0 0;
+      font-family:var(--mono);
+      line-height:1.45;
+    }
+
+    /* Cartões dos times */
+    .p-team{
+      border:1px solid #D4D0C4;
+      border-radius:12px;
+      margin-top:12px;
+      overflow:hidden;
+      background:#FFFFFF;
+      page-break-inside:avoid;
+      break-inside:avoid;
+      box-shadow:0 2px 7px rgba(28,27,24,.10);
+    }
+
+    .p-team-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      background:#0B3D2E;
+      color:#F6F1E4;
+      padding:9px 12px 8px;
+      font-size:13px;
+      font-weight:800;
+      text-transform:uppercase;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+
+    .p-team-head .p-team-title{
+      display:flex;
+      align-items:center;
+      gap:7px;
+      flex-wrap:wrap;
+    }
+    .p-uniform{
+      display:inline-block;
+      margin-left:3px;
+      padding:3px 6px;
+      border-radius:5px;
+      background:#F6F1E4;
+      font-family:var(--mono);
+      font-size:8px;
+      line-height:1.2;
+      font-weight:900;
+      letter-spacing:.03em;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+
+    .p-team-head .p-team-title::before{
+      content:"";
+      width:7px;
+      height:7px;
+      border-radius:50%;
+      background:#E8B93B;
+      flex:none;
+    }
+
+    .p-team-head span{
+      font-family:var(--mono);
+      font-weight:700;
+      text-transform:none;
+      font-size:9px;
+      color:#DCD5C3;
+      white-space:nowrap;
+    }
+
+    .p-row{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      min-height:26px;
+      padding:4px 12px;
+      font-size:11.5px;
+      border-bottom:1px solid #ECE9E1;
+    }
+
+    .p-row:nth-child(even){
+      background:#FAF9F5;
+    }
+
+    .p-row:last-child{ border-bottom:none; }
+
+    .p-row .p-i{
+      width:17px;
+      color:#9A9488;
+      font-family:var(--mono);
+      font-size:9.5px;
+      text-align:center;
+      flex:none;
+    }
+
+    .p-row .p-n{
+      flex:1;
+      font-weight:600;
+    }
+
+    /* No PDF, mostramos apenas N/V — o tier fica exclusivamente no app. */
+    .p-row .p-age{
+      min-width:18px;
+      height:18px;
+      border:1px solid #D4D0C4;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family:var(--mono);
+      font-size:8.5px;
+      font-weight:800;
+    }
+
+    .p-row .p-age.age-N{
+      color:#367D6D;
+      border-color:#8EC7BA;
+      background:#EFF8F5;
+    }
+
+    .p-row .p-age.age-V{
+      color:#81558D;
+      border-color:#C9A9D1;
+      background:#F7F0F9;
+    }
+
+    .p-foot{
+      margin-top:14px;
+      padding:8px 10px 0;
+      border-top:1px solid #CFCBC0;
+      font-family:var(--mono);
+      font-size:8.5px;
+      line-height:1.5;
+      color:#6E695F;
+    }
+
+    .p-foot div{
+      margin-top:3px;
+    }
+
+    /* Evita que um cartão seja partido entre páginas. */
+    .p-team, .p-head, .p-foot{
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
+  }
+
+  footer{
+    text-align:center;
+    margin-top:36px;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:rgba(246,241,228,0.28);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Toda quinta, 19h</p>
+    <h1>Pelada de Quinta</h1>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-view="sorteio">Sorteio</button>
+    <button class="tab-btn" data-view="atletas">Atletas</button>
+  </div>
+
+  <!-- SORTEIO VIEW -->
+  <section class="view active" id="view-sorteio">
+    <div class="section-label">Presença de hoje</div>
+    <div class="roster-tools">
+      <input class="search-input" type="search" id="roster-search" placeholder="Pesquisar atleta..." aria-label="Pesquisar atleta">
+      <div class="presence-actions">
+        <button class="btn-small" id="btn-all-present" type="button">Todos presentes</button>
+        <button class="btn-small" id="btn-all-absent" type="button">Todos ausentes</button>
+        <button class="btn-small" id="btn-clear-presence" type="button">Limpar presença</button>
+      </div>
+    </div>
+    <div class="roster" id="roster-list"></div>
+    <div class="empty-state" id="roster-empty" style="display:none;">
+      Ainda não tem ninguém cadastrado.<br>
+      Vá em <a data-goto="atletas">Atletas</a> e monte seu elenco.
+    </div>
+
+    <div class="cta-row">
+      <button class="btn btn-primary" id="btn-sortear">Sortear times</button>
+      <button class="btn btn-secondary" id="btn-resortear" disabled>Resortear</button>
+    </div>
+    <p class="count-pill" id="present-count"></p>
+
+    <div class="teams" id="teams-output"></div>
+    <div id="draw-meta"></div>
+    <button class="btn btn-pdf" id="btn-pdf" style="display:none;">Gerar PDF</button>
+  </section>
+
+  <!-- ATLETAS VIEW -->
+  <section class="view" id="view-atletas">
+    <div class="section-label">Novo atleta</div>
+    <div class="add-form">
+      <input type="text" id="new-name" placeholder="Nome do craque">
+      <select class="tier-select" id="new-tier">
+        <option value="10">T10</option>
+        <option value="9">T9</option>
+        <option value="8">T8</option>
+        <option value="7">T7</option>
+        <option value="6" selected>T6</option>
+        <option value="5">T5</option>
+        <option value="4">T4</option>
+        <option value="3">T3</option>
+        <option value="2">T2</option>
+        <option value="1">T1</option>
+      </select>
+      <select class="tier-select" id="new-age">
+        <option value="N">N</option>
+        <option value="V">V</option>
+      </select>
+      <button class="btn-add" id="btn-add-athlete">+</button>
+    </div>
+
+    <div class="section-label">Elenco</div>
+    <input class="search-input manage-search" type="search" id="manage-search" placeholder="Pesquisar atleta para editar..." aria-label="Pesquisar atleta para editar">
+    <div id="manage-list"></div>
+    <div class="empty-state" id="manage-empty" style="display:none;">
+      Nenhum atleta ainda. Adicione o primeiro acima.
+    </div>
+
+    <div class="tier-legend">
+      T10 = melhor nível &nbsp;·&nbsp; T1 = nível iniciante<br>
+      N = mais novo &nbsp;·&nbsp; V = mais velho<br>
+      Toque no número do tier ou em N/V pra alterar cada atleta.
+    </div>
+  </section>
+
+  <footer>Bola rolando desde sempre</footer>
+</div>
+
+<!-- área usada só na impressão / PDF -->
+<div id="print-area" aria-hidden="true"></div>
+
+<script>
+(function(){
+  "use strict";
+  const STORAGE_KEY = "pelada_quinta_atletas_v2";
+  const TEAM_SIZE = 6;
+
+  // Elenco inicial (tiers 1-10, 10 = melhor). Idade (N/V) fica em aberto — ajuste em Atletas.
+  const DEFAULT_ATHLETES = [
+    {name:"Lucao", tier:10, age:"N"}, {name:"Léo", tier:10, age:"N"},
+    {name:"André", tier:9, age:"N"}, {name:"João", tier:9, age:"N"}, {name:"Rato", tier:9, age:"N"},
+    {name:"Tadeu", tier:7, age:"N"}, {name:"Rodrigo", tier:7, age:"N"}, {name:"Sydnei", tier:7}, {name:"Rogério", tier:7}, {name:"Paul", tier:7},
+    {name:"Taiguara", tier:5}, {name:"Ruy", tier:6}, {name:"Luiz Otávio", tier:6}, {name:"Robinson", tier:6}, {name:"Rafa", tier:6},
+    {name:"Guima", tier:5, age:"N"}, {name:"Henrique", tier:5}, {name:"Thiago", tier:5}, {name:"Rodney", tier:5},
+    {name:"Tiago", tier:4}, {name:"Valmir", tier:4},
+    {name:"Antônio", tier:3}, {name:"Fernando", tier:3},
+    {name:"Murua", tier:2}, {name:"Tomás", tier:2}, {name:"Maurício", tier:2}
+  ];
+
+  // Ajustes de tier aplicados uma única vez sobre elencos já salvos no aparelho.
+  // Sem isso, quem já abriu o app antes continuaria com os tiers antigos.
+  const TIER_PATCH_KEY = "pelada_quinta_tier_patch_v3";
+  const TIER_PATCH = { "rogerio":7, "paul":7, "rato":9, "fernando":3, "guima":5 };
+
+  function normalizeName(str){
+    return String(str||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();
+  }
+  function sortAthletesAlphabetically(){
+    athletes.sort((a,b)=> normalizeName(a.name).localeCompare(normalizeName(b.name), "pt-BR"));
+  }
+
+  /* ---------- state ---------- */
+  let athletes = loadAthletes();
+  let lastTeams = null; // holds last drawn teams so "resortear" can re-run
+  let manageUnlocked = true;
+
+  function loadAthletes(){
+    let stored = [];
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) stored = JSON.parse(raw);
+    }catch(e){ console.warn("storage read failed", e); }
+
+    if(!Array.isArray(stored) || stored.length === 0){
+      // primeira vez: semeia com o elenco padrão
+      const seeded = DEFAULT_ATHLETES.map(a => ({ id: uid(), name: a.name, tier: a.tier, age: a.age || "V", present: true }));
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded)); }catch(e){}
+      return seeded;
+    }
+
+    // já existe elenco salvo: nunca sobrescreve nomes/edições existentes,
+    // só adiciona (uma vez) atletas do padrão que ainda não estejam salvos
+    const existingNames = new Set(stored.map(a => (a.name||"").trim().toLowerCase()));
+    let changed = false;
+    DEFAULT_ATHLETES.forEach(d=>{
+      const key = d.name.trim().toLowerCase();
+      if(!existingNames.has(key)){
+        stored.push({ id: uid(), name: d.name, tier: d.tier, age: d.age || "V", present: true });
+        existingNames.add(key);
+        changed = true;
+      }
+    });
+    // garante que todo atleta tenha campo 'age' (migração leve)
+    const defaultYoungNames = new Set(["lucao","leo","andre","joao","rato","tadeu","rodrigo","guima"]);
+    stored.forEach(a=>{
+      const key = normalizeName(a.name);
+      if(defaultYoungNames.has(key) && a.age !== "N"){ a.age = "N"; changed = true; }
+      else if(a.age !== "N" && a.age !== "V"){ a.age = "V"; changed = true; }
+    });
+
+    // migração de tiers (Rogério, Paul, Rato sobem; Fernando, Guima descem)
+    let patchDone = false;
+    try{ patchDone = localStorage.getItem(TIER_PATCH_KEY) === "1"; }catch(e){}
+    if(!patchDone){
+      stored.forEach(a=>{
+        const key = normalizeName(a.name);
+        if(TIER_PATCH[key] !== undefined && a.tier !== TIER_PATCH[key]){
+          a.tier = TIER_PATCH[key];
+          changed = true;
+        }
+      });
+      try{ localStorage.setItem(TIER_PATCH_KEY, "1"); }catch(e){}
+    }
+    if(changed){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(stored)); }catch(e){} }
+    stored.sort((a,b)=> normalizeName(a.name).localeCompare(normalizeName(b.name), "pt-BR"));
+    return stored;
+  }
+  function saveAthletes(){
+    sortAthletesAlphabetically();
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(athletes)); }
+    catch(e){ console.warn("storage write failed", e); }
+  }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  // gradiente de cor pro tier-pin: tier 1 (fraco) -> cinza-esverdeado, tier 10 (craque) -> dourado
+  function tierColor(t){
+    const bottom = {h:165, s:14, l:44};
+    const top    = {h:43,  s:74, l:58};
+    const pct = Math.max(0, Math.min(1, (t - 1) / 9));
+    const h = bottom.h + (top.h - bottom.h) * pct;
+    const s = bottom.s + (top.s - bottom.s) * pct;
+    const l = bottom.l + (top.l - bottom.l) * pct;
+    const textColor = l > 50 ? "#1C1B18" : "#F6F1E4";
+    return { bg: `hsl(${h.toFixed(0)} ${s.toFixed(0)}% ${l.toFixed(0)}%)`, fg: textColor };
+  }
+  function tierPinHtml(tier, extraClass){
+    const c = tierColor(tier);
+    return `<span class="tier-pin ${extraClass||""}" style="background:${c.bg};color:${c.fg}">T${tier}</span>`;
+  }
+  function ageBadgeHtml(age){
+    return `<span class="age-badge age-${age}">${age}</span>`;
+  }
+
+  /* ---------- tabs ---------- */
+  const tabBtns = document.querySelectorAll(".tab-btn");
+  const views = { sorteio: document.getElementById("view-sorteio"), atletas: document.getElementById("view-atletas") };
+  function goto(view){
+    tabBtns.forEach(b => b.classList.toggle("active", b.dataset.view === view));
+    Object.entries(views).forEach(([k, el]) => el.classList.toggle("active", k === view));
+  }
+  tabBtns.forEach(b => b.addEventListener("click", () => {
+    if(b.dataset.view === "atletas") renderManage();
+    goto(b.dataset.view);
+  }));
+  document.querySelectorAll("[data-goto]").forEach(a=>{
+    a.addEventListener("click", (e)=>{
+      e.preventDefault();
+      if(a.dataset.goto === "atletas") renderManage();
+      goto(a.dataset.goto);
+    });
+  });
+
+  /* ---------- roster (presence) rendering ---------- */
+  const rosterList = document.getElementById("roster-list");
+  const rosterEmpty = document.getElementById("roster-empty");
+  const presentCount = document.getElementById("present-count");
+  const btnSortear = document.getElementById("btn-sortear");
+  const btnResortear = document.getElementById("btn-resortear");
+
+  const rosterSearch = document.getElementById("roster-search");
+  const manageSearch = document.getElementById("manage-search");
+
+  function renderRoster(){
+    sortAthletesAlphabetically();
+    rosterList.innerHTML = "";
+    const term = normalizeName(rosterSearch.value);
+    if(athletes.length === 0){
+      rosterEmpty.style.display = "block";
+    } else {
+      rosterEmpty.style.display = "none";
+      const visibleAthletes = athletes.filter(a => normalizeName(a.name).includes(term));
+      visibleAthletes.forEach(a=>{
+        const row = document.createElement("div");
+        row.className = "roster-item" + (a.present ? "" : " absent");
+        row.innerHTML = `
+          <div class="checkbox ${a.present ? "checked":""}" data-id="${a.id}">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M2 8.5L6 12.5L14 3.5" stroke="#1C1B18" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          ${a.photo ? `<img class="roster-photo" src="${a.photo}" alt="">` : `<div class="roster-photo-placeholder">⚽</div>`}
+          <span class="roster-name">${escapeHtml(a.name)}</span>
+          ${ageBadgeHtml(a.age)}
+        `;
+        rosterList.appendChild(row);
+      });
+      if(visibleAthletes.length === 0) rosterList.innerHTML = '<div class="empty-state">Nenhum atleta encontrado.</div>';
+    }
+    const presentN = athletes.filter(a=>a.present).length;
+    presentCount.innerHTML = athletes.length ? `<b>${presentN}</b> presente${presentN===1?"":"s"} de <b>${athletes.length}</b> no elenco` : "";
+  }
+
+  rosterSearch.addEventListener("input", renderRoster);
+
+  function invalidateDraw(){
+    lastTeams = null;
+    btnResortear.disabled = true;
+    document.getElementById("teams-output").innerHTML = "";
+    const meta = document.getElementById("draw-meta");
+    meta.innerHTML = ""; meta.className = "";
+    document.getElementById("print-area").innerHTML = "";
+    btnPdf.style.display = "none";
+  }
+
+  function updatePresenceForAll(value){
+    athletes.forEach(a => { a.present = value; });
+    saveAthletes();
+    renderRoster();
+    invalidateDraw();
+  }
+  document.getElementById("btn-all-present").addEventListener("click", () => updatePresenceForAll(true));
+  document.getElementById("btn-all-absent").addEventListener("click", () => updatePresenceForAll(false));
+  document.getElementById("btn-clear-presence").addEventListener("click", () => updatePresenceForAll(false));
+
+  rosterList.addEventListener("click", (e)=>{
+    const box = e.target.closest(".checkbox");
+    if(!box) return;
+    const a = athletes.find(x=>x.id===box.dataset.id);
+    if(!a) return;
+    a.present = !a.present;
+    saveAthletes();
+    renderRoster();
+    // presença alterada: invalida o sorteio anterior
+    invalidateDraw();
+  });
+
+  /* ---------- balancing algorithm ---------- */
+  function tierValue(t){ return t; } // 10 = melhor, 1 = pior
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function teamAvg(team){
+    return team.players.length ? team.players.reduce((s,p)=>s+tierValue(p.tier),0)/team.players.length : 0;
+  }
+
+  /* Pesos da função de custo.
+     Prioridade 1 (dominante): médias dos times o mais próximas possível.
+     Prioridade 2: mistura de N e V.
+     Regras duras viram penalidades altas: dois T10 juntos e T>=8 em time incompleto.
+     Regra "evitar": dois jogadores T2/T3 no mesmo time. */
+  const W_MEAN        = 200;  // desvio² da média do time vs média geral (times completos)
+  const W_SPREAD      = 90;   // (maior média - menor média)² entre times completos
+  const W_MEAN_PART   = 25;   // mesmo desvio², mas para o time incompleto (peso menor)
+  const W_AGE         = 12;    // desvio² na contagem de N esperada
+  // As duas regras duras usam peso muito acima da escala do resto: elas nunca
+  // podem ser "compradas" por uma melhora de média. Quando são impossíveis de
+  // cumprir (ex.: 3 craques e só 2 times), a penalidade vira constante e não
+  // distorce o equilíbrio — o aviso aparece no diagnóstico.
+  const P_TEN_TOGETHER= 60000; // por T10 excedente no mesmo time
+  const P_HIGH_PART   = 40000; // por T>=8 alocado em time incompleto
+  const P_LOW_TOGETHER= 120;   // por T2/T3 excedente no mesmo time (regra "evitar")
+
+  function buildCapacities(n){
+    const fullTeams = Math.floor(n / TEAM_SIZE);
+    const remainder = n % TEAM_SIZE;
+    const caps = [];
+    for(let i=0;i<fullTeams;i++) caps.push(TEAM_SIZE);
+    if(remainder > 0) caps.push(remainder);
+    if(caps.length === 0) caps.push(n);
+    return caps;
+  }
+
+  function makeContext(present){
+    const total = present.reduce((s,p)=>s+tierValue(p.tier),0);
+    const nTotal = present.filter(p=>p.age==="N").length;
+    return {
+      globalAvg: total / present.length,
+      shareN: nTotal / present.length
+    };
+  }
+
+  function costOf(teams, ctx){
+    let cost = 0;
+    const completeAvgs = [];
+
+    teams.forEach(t=>{
+      if(!t.players.length) return;
+      const avg = teamAvg(t);
+      const dev = avg - ctx.globalAvg;
+      const isComplete = t.players.length >= TEAM_SIZE;
+
+      if(isComplete){
+        cost += W_MEAN * dev * dev;
+        completeAvgs.push(avg);
+      } else {
+        cost += W_MEAN_PART * dev * dev;
+        // craques não devem cair no time incompleto
+        cost += P_HIGH_PART * t.players.filter(p=>p.tier >= 8).length;
+      }
+
+      // mistura N/V proporcional ao tamanho do time
+      const nCount = t.players.filter(p=>p.age==="N").length;
+      const expectedN = ctx.shareN * t.players.length;
+      const ageDev = nCount - expectedN;
+      cost += W_AGE * ageDev * ageDev;
+
+      // dois notas 10 juntos: proibido
+      const tens = t.players.filter(p=>p.tier === 10).length;
+      if(tens > 1) cost += P_TEN_TOGETHER * (tens - 1);
+
+      // dois notas 2 ou 3 juntos: evitar
+      const lows = t.players.filter(p=>p.tier <= 3).length;
+      if(lows > 1) cost += P_LOW_TOGETHER * (lows - 1);
+    });
+
+    if(completeAvgs.length > 1){
+      const spread = Math.max(...completeAvgs) - Math.min(...completeAvgs);
+      cost += W_SPREAD * spread * spread;
+    }
+
+    return cost;
+  }
+
+  // Distribuição inicial: serpentina (1,2,3,3,2,1...) por ordem de tier,
+  // que já parte de um estado razoável antes da busca local.
+  function snakeStart(present, caps){
+    const teams = caps.map(cap => ({ cap, players: [] }));
+    const order = caps.map((c,i)=>i).sort((a,b)=> caps[b]-caps[a]);
+    const pool = shuffle(present).sort((a,b)=> tierValue(b.tier) - tierValue(a.tier));
+    let dir = 1, cursor = 0;
+    pool.forEach(player=>{
+      let guard = 0;
+      while(guard++ < order.length * 3){
+        const t = teams[order[cursor]];
+        cursor += dir;
+        if(cursor >= order.length){ cursor = order.length - 1; dir = -1; }
+        else if(cursor < 0){ cursor = 0; dir = 1; }
+        if(t.players.length < t.cap){ t.players.push(player); return; }
+      }
+      teams.find(t=>t.players.length < t.cap).players.push(player);
+    });
+    return teams;
+  }
+
+  function randomStart(present, caps){
+    const teams = caps.map(cap => ({ cap, players: [] }));
+    const pool = shuffle(present);
+    let idx = 0;
+    teams.forEach(t=>{ while(t.players.length < t.cap && idx < pool.length) t.players.push(pool[idx++]); });
+    return teams;
+  }
+
+  // Busca local: troca jogadores entre times enquanto isso reduzir o custo.
+  // Só troca (nunca move), então o tamanho de cada time nunca muda.
+  function improve(teams, ctx){
+    let cost = costOf(teams, ctx);
+    let improved = true;
+    let passes = 0;
+
+    while(improved && passes++ < 60){
+      improved = false;
+      for(let i=0;i<teams.length;i++){
+        for(let j=i+1;j<teams.length;j++){
+          for(let a=0;a<teams[i].players.length;a++){
+            for(let b=0;b<teams[j].players.length;b++){
+              if(teams[i].players[a].tier === teams[j].players[b].tier &&
+                 teams[i].players[a].age === teams[j].players[b].age) continue; // troca neutra
+              const tmp = teams[i].players[a];
+              teams[i].players[a] = teams[j].players[b];
+              teams[j].players[b] = tmp;
+              const c = costOf(teams, ctx);
+              if(c < cost - 1e-9){
+                cost = c;
+                improved = true;
+              } else {
+                teams[j].players[b] = teams[i].players[a];
+                teams[i].players[a] = tmp;
+              }
+            }
+          }
+        }
+      }
+    }
+    return cost;
+  }
+
+  function signature(teams){
+    return teams.map(t => t.players.map(p=>p.id).sort().join("-")).sort().join("|");
+  }
+
+  const UNIFORMS = [
+    { name:"Azul", color:"#1769D2", group:"azul-vermelho" },
+    { name:"Vermelho", color:"#C1443B", group:"azul-vermelho" },
+    { name:"Verde", color:"#17834B", group:"verde-preto" },
+    { name:"Preto", color:"#1C1B18", group:"verde-preto" }
+  ];
+
+  function assignUniforms(teams){
+    if(!teams.length) return;
+
+    // Os dois primeiros times precisam usar coletes de famílias diferentes:
+    // azul/vermelho são reversíveis entre si; verde/preto também.
+    if(teams.length >= 2){
+      const firstGroup = Math.random() < 0.5 ? "azul-vermelho" : "verde-preto";
+      const secondGroup = firstGroup === "azul-vermelho" ? "verde-preto" : "azul-vermelho";
+      const firstOptions = UNIFORMS.filter(u => u.group === firstGroup);
+      const secondOptions = UNIFORMS.filter(u => u.group === secondGroup);
+      teams[0].uniform = firstOptions[Math.floor(Math.random() * firstOptions.length)];
+      teams[1].uniform = secondOptions[Math.floor(Math.random() * secondOptions.length)];
+    } else {
+      teams[0].uniform = UNIFORMS[Math.floor(Math.random() * UNIFORMS.length)];
+    }
+
+    // A partir do terceiro time, a escolha é livre e aleatória.
+    for(let i=2;i<teams.length;i++){
+      teams[i].uniform = UNIFORMS[Math.floor(Math.random() * UNIFORMS.length)];
+    }
+  }
+
+  function drawTeams(){
+    const present = athletes.filter(a=>a.present);
+    if(present.length === 0) return [];
+
+    const caps = buildCapacities(present.length);
+    const ctx = makeContext(present);
+    const RESTARTS = 40;
+    const results = [];
+
+    for(let r=0;r<RESTARTS;r++){
+      const teams = r === 0 ? snakeStart(present, caps) : randomStart(present, caps);
+      const cost = improve(teams, ctx);
+      results.push({ teams, cost });
+    }
+
+    results.sort((a,b)=> a.cost - b.cost);
+    const best = results[0].cost;
+    // Tolerância absoluta: aceita soluções praticamente tão boas quanto a melhor
+    // e sorteia entre elas, para o "Resortear" não devolver sempre o mesmo.
+    // Absoluta de propósito — se fosse proporcional, um custo alto por regra
+    // impossível abriria margem para times desequilibrados entrarem no sorteio.
+    const tol = 10;
+    let pool = results.filter(r => r.cost <= best + tol);
+
+    const prevSig = lastTeams ? signature(lastTeams) : null;
+    if(prevSig && pool.length > 1){
+      const different = pool.filter(r => signature(r.teams) !== prevSig);
+      if(different.length) pool = different;
+    }
+
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    // times completos primeiro, e o incompleto sempre por último
+    chosen.teams.sort((a,b)=> b.players.length - a.players.length);
+    chosen.teams.forEach(t=>{ t._cost = chosen.cost; });
+    assignUniforms(chosen.teams);
+    return chosen.teams;
+  }
+
+  /* ---------- diagnóstico ---------- */
+  function drawReport(teams){
+    const complete = teams.filter(t=>t.players.length >= TEAM_SIZE);
+    const avgs = complete.map(teamAvg);
+    const spread = avgs.length > 1 ? Math.max(...avgs) - Math.min(...avgs) : 0;
+    const warnings = [];
+
+    teams.forEach((t, i)=>{
+      const tens = t.players.filter(p=>p.tier === 10);
+      if(tens.length > 1) warnings.push(`Time ${i+1}: ${tens.map(p=>p.name).join(" e ")} são nota 10 e ficaram juntos (não havia como separar).`);
+      const lows = t.players.filter(p=>p.tier <= 3);
+      if(lows.length > 1) warnings.push(`Time ${i+1}: ${lows.length} jogadores nota 2/3 juntos (${lows.map(p=>p.name).join(", ")}).`);
+      if(t.players.length < TEAM_SIZE){
+        const highs = t.players.filter(p=>p.tier >= 8);
+        if(highs.length) warnings.push(`Time ${i+1} está incompleto e ficou com ${highs.map(p=>p.name).join(", ")} (tier alto).`);
+      }
+    });
+
+    if(spread > 0.75) warnings.push(`Diferença de ${spread.toFixed(2)} entre a maior e a menor média — foi o melhor possível com quem está presente hoje.`);
+
+    return { spread, warnings, complete: complete.length, total: teams.length };
+  }
+
+  function renderTeams(teams){
+    const out = document.getElementById("teams-output");
+    out.innerHTML = "";
+    teams.forEach((team, i)=>{
+      const avg = teamAvg(team);
+      const nCount = team.players.filter(p=>p.age==="N").length;
+      const vCount = team.players.filter(p=>p.age==="V").length;
+      const card = document.createElement("div");
+      card.className = "team-card";
+      const rows = team.players
+        .slice()
+        .sort((a,b)=> tierValue(b.tier)-tierValue(a.tier))
+        .map((p, idx)=>`
+          <div class="player-row">
+            <span class="idx">${idx+1}</span>
+            <span class="nm">${escapeHtml(p.name)}</span>
+            ${ageBadgeHtml(p.age)}
+          </div>
+        `).join("");
+      card.innerHTML = `
+        <div class="team-head">
+          <div>
+            <span class="num">Time ${i+1} · ${team.players.length} jogador${team.players.length===1?"":"es"} · ${nCount}N/${vCount}V</span>
+            <span class="name">Time ${i+1}</span>
+            ${team.uniform ? `<span class="uniform-tag" style="color:${team.uniform.color}"> ${team.uniform.name}</span>` : ""}
+          </div>
+          ${team.players.length >= TEAM_SIZE ? `<div class="avg">
+            <span class="val">${avg.toFixed(1)}</span>
+            <span class="lbl">nível médio</span>
+          </div>` : ""}
+        </div>
+        <div class="perforation"></div>
+        <div class="team-players">${rows}</div>
+      `;
+      out.appendChild(card);
+    });
+
+    renderMeta(teams);
+    buildPrintArea(teams);
+  }
+
+  function renderMeta(teams){
+    const box = document.getElementById("draw-meta");
+    if(!teams || !teams.length){ box.innerHTML = ""; box.className = ""; return; }
+    const rep = drawReport(teams);
+    const nTotal = teams.reduce((s,t)=> s + t.players.filter(p=>p.age==="N").length, 0);
+    const vTotal = teams.reduce((s,t)=> s + t.players.filter(p=>p.age==="V").length, 0);
+    const avgs = teams.filter(t=>t.players.length >= TEAM_SIZE).map(teamAvg);
+    box.className = "draw-meta";
+    box.innerHTML = `
+      Diferença entre médias: <b>${rep.spread.toFixed(2)}</b>
+      ${avgs.length ? ` (de ${Math.min(...avgs).toFixed(1)} a ${Math.max(...avgs).toFixed(1)})` : ""}<br>
+      Times: <b>${rep.total}</b> · completos: <b>${rep.complete}</b> · elenco de hoje: <b>${nTotal}N/${vTotal}V</b>
+      ${rep.warnings.map(w=>`<span class="warn">${escapeHtml(w)}</span>`).join("")}
+    `;
+  }
+
+  /* ---------- PDF (impressão nativa) ---------- */
+  function buildPrintArea(teams){
+    const area = document.getElementById("print-area");
+    if(!teams || !teams.length){ area.innerHTML = ""; return; }
+
+    const now = new Date();
+    const stamp = now.toLocaleDateString("pt-BR", { weekday:"long", day:"2-digit", month:"long", year:"numeric" })
+      + " · " + now.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" });
+    const rep = drawReport(teams);
+    const totalPlayers = teams.reduce((s,t)=> s + t.players.length, 0);
+
+    const blocks = teams.map((team, i)=>{
+      const avg = teamAvg(team);
+      const nCount = team.players.filter(p=>p.age==="N").length;
+      const vCount = team.players.filter(p=>p.age==="V").length;
+      const rows = team.players
+        .slice()
+        .sort((a,b)=> tierValue(b.tier)-tierValue(a.tier))
+        .map((p, idx)=>`
+          <div class="p-row">
+            <span class="p-i">${idx+1}</span>
+            <span class="p-n">${escapeHtml(p.name)}</span>
+            <span class="p-age age-${p.age}">${p.age}</span>
+          </div>`).join("");
+      return `
+        <div class="p-team">
+          <div class="p-team-head">
+            <div class="p-team-title">
+              Time ${i+1}${team.players.length < TEAM_SIZE ? " (incompleto)" : ""}
+              ${team.uniform ? `<span class="p-uniform" style="color:${team.uniform.color}">${team.uniform.name}</span>` : ""}
+            </div>
+            <span>${team.players.length} jog. · ${nCount}N/${vCount}V${team.players.length >= TEAM_SIZE ? ` · média ${avg.toFixed(1)}` : ""}</span>
+          </div>
+          ${rows}
+        </div>`;
+    }).join("");
+
+    area.innerHTML = `
+      <div class="p-head">
+        <h2>Pelada de Quinta — Sorteio</h2>
+        <p class="p-sub">${escapeHtml(stamp)} · ${totalPlayers} jogadores · ${teams.length} times</p>
+      </div>
+      ${blocks}
+      <div class="p-foot">
+        Diferença entre as médias dos times completos: ${rep.spread.toFixed(2)}
+        ${rep.warnings.map(w=>`<div>Obs.: ${escapeHtml(w)}</div>`).join("")}
+      </div>
+    `;
+  }
+
+  const btnPdf = document.getElementById("btn-pdf");
+
+  btnSortear.addEventListener("click", ()=>{
+    const present = athletes.filter(a=>a.present).length;
+    if(present === 0) return;
+    lastTeams = drawTeams();
+    renderTeams(lastTeams);
+    btnResortear.disabled = false;
+    btnPdf.style.display = "block";
+  });
+
+  btnResortear.addEventListener("click", ()=>{
+    lastTeams = drawTeams(); // presence untouched, only order/grouping re-rolled
+    renderTeams(lastTeams);
+    btnPdf.style.display = "block";
+  });
+
+  btnPdf.addEventListener("click", ()=>{
+    if(!lastTeams || !lastTeams.length) return;
+    buildPrintArea(lastTeams); // garante data/hora atualizada
+    window.print();
+  });
+
+  /* ---------- manage view ---------- */
+  const manageList = document.getElementById("manage-list");
+  const manageEmpty = document.getElementById("manage-empty");
+  const newNameInput = document.getElementById("new-name");
+  const newTierSelect = document.getElementById("new-tier");
+  const newAgeSelect = document.getElementById("new-age");
+
+  function renderManage(){
+    sortAthletesAlphabetically();
+    manageList.innerHTML = "";
+    const term = normalizeName(manageSearch.value);
+    if(athletes.length === 0){
+      manageEmpty.style.display = "block";
+    } else {
+      manageEmpty.style.display = "none";
+      const visibleAthletes = athletes.filter(a => normalizeName(a.name).includes(term));
+      visibleAthletes.forEach(a=>{
+        const row = document.createElement("div");
+        row.className = "manage-item";
+        row.innerHTML = `
+          <div class="manage-photo-wrap">
+            ${a.photo ? `<img class="manage-photo" src="${a.photo}" alt="">` : `<div class="manage-photo roster-photo-placeholder">⚽</div>`}
+            <input class="photo-input" type="file" accept="image/*" data-id="${a.id}" data-action="photo">
+          </div>
+          <input type="text" value="${escapeHtml(a.name)}" data-id="${a.id}" data-action="rename">
+          <div class="tier-seg" data-id="${a.id}">
+            ${[10,9,8,7,6,5,4,3,2,1].map(t=>`<button data-tier="${t}" class="${a.tier===t?"active":""}">${t}</button>`).join("")}
+          </div>
+          <div class="age-seg" data-id="${a.id}">
+            <button data-age="N" class="age-N ${a.age==="N"?"active":""}">N</button>
+            <button data-age="V" class="age-V ${a.age==="V"?"active":""}">V</button>
+          </div>
+          <button class="del-btn" data-id="${a.id}" data-action="delete">✕</button>
+        `;
+        manageList.appendChild(row);
+      });
+      if(visibleAthletes.length === 0) manageList.innerHTML = '<div class="empty-state">Nenhum atleta encontrado.</div>';
+    }
+  }
+
+  manageSearch.addEventListener("input", renderManage);
+
+  manageList.addEventListener("click", (e)=>{
+    const tierBtn = e.target.closest(".tier-seg button");
+    if(tierBtn){
+      const id = tierBtn.parentElement.dataset.id;
+      const a = athletes.find(x=>x.id===id);
+      if(a){ a.tier = Number(tierBtn.dataset.tier); saveAthletes(); renderManage(); renderRoster(); }
+      return;
+    }
+    const ageBtn = e.target.closest(".age-seg button");
+    if(ageBtn){
+      const id = ageBtn.parentElement.dataset.id;
+      const a = athletes.find(x=>x.id===id);
+      if(a){ a.age = ageBtn.dataset.age; saveAthletes(); renderManage(); renderRoster(); }
+      return;
+    }
+    const delBtn = e.target.closest('[data-action="delete"]');
+    if(delBtn){
+      athletes = athletes.filter(x=>x.id !== delBtn.dataset.id);
+      saveAthletes(); renderManage(); renderRoster();
+      return;
+    }
+  });
+
+  manageList.addEventListener("change", (e)=>{
+    const photoInput = e.target.closest('[data-action="photo"]');
+    if(photoInput){
+      const file = photoInput.files && photoInput.files[0];
+      const a = athletes.find(x=>x.id===photoInput.dataset.id);
+      if(!file || !a) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        a.photo = reader.result;
+        saveAthletes();
+        renderManage();
+        renderRoster();
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+    const input = e.target.closest('[data-action="rename"]');
+    if(!input) return;
+    const a = athletes.find(x=>x.id===input.dataset.id);
+    if(a){
+      a.name = input.value.trim() || a.name;
+      sortAthletesAlphabetically();
+      saveAthletes(); renderManage(); renderRoster();
+    }
+  });
+
+  document.getElementById("btn-add-athlete").addEventListener("click", addAthlete);
+  newNameInput.addEventListener("keydown", (e)=>{ if(e.key === "Enter") addAthlete(); });
+
+  function addAthlete(){
+    const name = newNameInput.value.trim();
+    if(!name) { newNameInput.focus(); return; }
+    const newAthlete = { id: uid(), name, tier: Number(newTierSelect.value), age: newAgeSelect.value, present: true, photo: "" };
+    athletes.push(newAthlete);
+    sortAthletesAlphabetically();
+    saveAthletes();
+    newNameInput.value = "";
+    newNameInput.focus();
+    renderManage();
+    renderRoster();
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  }
+
+  /* ---------- init ---------- */
+  renderRoster();
+  renderManage();
+})();
+</script>
+</body>
+</html>
